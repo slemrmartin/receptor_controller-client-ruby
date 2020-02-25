@@ -1,5 +1,4 @@
-module ReceptorController
-  module Client
+require "receptor_controller/client"
 
-  end
-end
+# module ReceptorController
+# end

@@ -3,8 +3,8 @@ require "manageiq-messaging"
 
 module ReceptorController
   class Client
-    require "topological_inventory/satellite/receptor/client/configuration"
-    require "topological_inventory/satellite/receptor/client/response_worker"
+    require "receptor_controller/client/configuration"
+    require "receptor_controller/client/response_worker"
 
     attr_accessor :default_headers, :identity_header, :logger
     attr_reader :config
