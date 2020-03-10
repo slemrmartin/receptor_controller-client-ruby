@@ -1,6 +1,19 @@
 require "concurrent"
 
 module ReceptorController
+  # ResponseWorker is listening on Kafka topic platform.receptor-controller.responses (@see Configuration.queue_topic)
+  # It asynchronously receives responses requested by POST /job to receptor controller.
+  # Request and response is paired by message ID (response of POST /job and 'in_response_to' value in kafka response here)
+  #
+  # Successful responses are at least two:
+  # * 1+ of 'response' type, containing data
+  # * 1 of 'eof' type, signalizing end of transmission
+  #
+  # Registered messages without response are removed after timeout (Configuration.response_timeout)
+  #
+  # All type of responses/timeout can be sent to registered callbacks (@see :register_message)
+  #
+  # Use "start" and "stop" methods to start/stop listening on Kafka
   class Client::ResponseWorker
     attr_reader :started
     alias_method :started?, :started
@@ -20,8 +33,8 @@ module ReceptorController
         return if started.value
 
         started.value         = true
-        workers[:maintenance] = Thread.new { check_timeouts }
-        workers[:listener]    = Thread.new { listen }
+        workers[:maintenance] = Thread.new { check_timeouts while started.value }
+        workers[:listener]    = Thread.new { listen while started.value }
       end
     end
 
@@ -43,8 +56,13 @@ module ReceptorController
     # @param receiver [Object] any object implementing callbacks
     # @param response_callback [Symbol] name of receiver's method processing responses
     # @param timeout_callback [Symbol] name of receiver's method processing timeout [optional]
-    def register_message(msg_id, receiver, response_callback: :response_received, timeout_callback: :response_timeout)
-      registered_messages[msg_id] = {:receiver => receiver, :response_callback => response_callback, :timeout_callback => timeout_callback, :registered_at => Time.now.utc}
+    def register_message(msg_id, receiver, response_callback: :response_success, timeout_callback: :response_timeout, error_callback: :response_error)
+      logger.debug("Receptor response: registering message #{msg_id}")
+      registered_messages[msg_id] = {:receiver          => receiver,
+                                     :response_callback => response_callback,
+                                     :timeout_callback  => timeout_callback,
+                                     :error_callback    => error_callback,
+                                     :registered_at     => Time.now.utc}
     end
 
     private
@@ -60,34 +78,42 @@ module ReceptorController
       client.subscribe_topic(queue_opts) do |message|
         process_message(message)
       end
+    rescue => err
+      logger.error("Exception in kafka listener: #{err}\n#{err.backtrace.join("\n")}")
     ensure
       client&.close
     end
 
     def process_message(message)
       response = JSON.parse(message.payload)
-      if response['code'] == 0
-        message_id = response['in_response_to']
-        # message_type: "response" (with data) or
-        #               "eof"(without data)
-        message_type = response['message_type']
 
-        if message_id
-          if (callbacks = registered_messages[message_id]).present?
+      if (message_id = response['in_response_to'])
+        if (callbacks = registered_messages[message_id]).present?
+          logger.debug("Receptor response: processing message #{message_id} (#{response})")
+          if response['code'] == 0
+            #
+            # Response OK
+            #
+            message_type = response['message_type'] # "response" (with data) or "eof" (without data)
             registered_messages.delete(message_id) if message_type == 'eof'
-            # Callback to sender
             callbacks[:receiver].send(callbacks[:response_callback], message_id, message_type, response['payload'])
+          else
+            #
+            # Response Error
+            #
+            registered_messages.delete(message_id)
+            callbacks[:receiver].send(callbacks[:error_callback], message_id, response['code'], response['payload'])
           end
         else
-          raise "Message id (in_response_to) not received! #{response}"
+          # noop, it's not error if not registered, can be processed by another pod
         end
       else
-        logger.error("Receptor_satellite:health_check directive failed in receptor_client node #{response['sender']}")
+        logger.error("Receptor response: Message id (in_response_to) not received! #{response}")
       end
     rescue JSON::ParserError => e
-      logger.error("Failed to parse Kafka response (#{e.message})\n#{message.payload}")
+      logger.error("Receptor response: Failed to parse Kafka response (#{e.message})\n#{message.payload}")
     rescue => e
-      logger.error("#{e}\n#{e.backtrace.join("\n")}")
+      logger.error("Receptor response: #{e}\n#{e.backtrace.join("\n")}")
     end
 
     def check_timeouts(threshold = config.response_timeout)
@@ -114,6 +140,8 @@ module ReceptorController
 
         sleep(config.response_timeout_poll_time)
       end
+    rescue => err
+      logger.error("Exception in maintenance worker: #{err}\n#{err.backtrace.join("\n")}")
     end
 
     # No persist_ref here, because all instances (pods) needs to receive kafka message
@@ -129,7 +157,7 @@ module ReceptorController
         :host       => config.queue_host,
         :port       => config.queue_port,
         :protocol   => :Kafka,
-        :client_ref => "tp-inventory-receptor_client-responses-#{Time.now.to_i}", # A reference string to identify the client
+        :client_ref => "receptor_client-responses-#{Time.now.to_i}", # A reference string to identify the client
       }
     end
   end
