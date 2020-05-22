@@ -1,3 +1,8 @@
 # ReceptorController::Client
 
+[![Build Status](https://travis-ci.org/RedHatInsights/receptor_controller-client-ruby.svg?branch=master)](https://travis-ci.org/RedHatInsights/receptor_controller-client-ruby)
+[![Maintainability](https://api.codeclimate.com/v1/badges/cb9e7859bcda536345f8/maintainability)](https://codeclimate.com/github/RedHatInsights/receptor_controller-client-ruby/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/cb9e7859bcda536345f8/test_coverage)](https://codeclimate.com/github/RedHatInsights/receptor_controller-client-ruby/test_coverage)
+[![security](https://hakiri.io/github/RedHatInsights/receptor_controller-client-ruby/master.svg)](https://hakiri.io/github/RedHatInsights/receptor_controller-client-ruby/master)
+
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam sed consequat arcu. Nunc porta eu mi sed ullamcorper. Ut in massa at est malesuada porttitor id at sem. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Suspendisse potenti. Mauris iaculis nunc ligula, in lobortis ipsum blandit vitae. Maecenas tristique, massa malesuada maximus imperdiet, dolor magna ultricies metus, vitae placerat purus erat vel lorem. Proin velit est, imperdiet eu nisl in, faucibus congue magna. Nullam varius sodales ipsum, sit amet dignissim nulla ultrices vel. Morbi varius nulla nec nisl pretium, eget congue neque vulputate. Sed dapibus sollicitudin nisl, eu tristique magna mattis ultrices. Praesent nunc sapien, sollicitudin id sollicitudin sed, euismod in velit. Ut id ante tincidunt, dapibus dolor quis, maximus orci. Pellentesque felis libero, posuere sed varius vehicula, dapibus non metus.
