@@ -21,7 +21,7 @@ Gem::Specification.new do |s|
 
   s.add_runtime_dependency 'activesupport', '~> 5.2.4.3'
   s.add_runtime_dependency 'concurrent-ruby', '~> 1.1', '>= 1.1.6'
-  s.add_runtime_dependency 'faraday'
+  s.add_runtime_dependency 'faraday', '~> 1.0'
   s.add_runtime_dependency 'json', '~> 2.3', '>= 2.3.0'
   s.add_runtime_dependency 'manageiq-loggers', '~> 0.4.0', '>= 0.4.2'
   s.add_runtime_dependency 'manageiq-messaging', '~> 0.1.5'

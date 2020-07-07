@@ -8,7 +8,6 @@ RSpec.describe ReceptorController::Client::DirectiveNonBlocking do
   end
   let(:headers) do
     {"Content-Type"    => "application/json",
-     "User-Agent"      => "Faraday v1.0.0",
      "Accept"          => "*/*",
      "Accept-Encoding" => 'gzip;q=1.0,deflate;q=0.6,identity;q=0.3'}.merge(identity)
   end
