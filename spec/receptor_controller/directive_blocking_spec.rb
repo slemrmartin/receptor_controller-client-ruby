@@ -28,7 +28,7 @@ RSpec.describe ReceptorController::Client::DirectiveBlocking do
   end
 
   let(:payload) { {'method' => :get, 'url' => 'tower.example.com', 'headers' => {}, 'ssl' => false}.to_json }
-  let(:directive) { 'receptor_http:execute'}
+  let(:directive) { 'receptor_http:execute' }
 
   subject { described_class.new(:name => directive, :account => external_tenant, :node_id => receptor_node, :payload => payload, :client => receptor_client) }
 
@@ -56,7 +56,7 @@ RSpec.describe ReceptorController::Client::DirectiveBlocking do
 
       expect(subject.response_worker).not_to receive(:register_message)
 
-      expect {subject.call}.to raise_error(ReceptorController::Client::ControllerResponseError)
+      expect { subject.call }.to raise_error(ReceptorController::Client::ControllerResponseError)
     end
 
     context "waiting for callbacks" do
@@ -75,7 +75,6 @@ RSpec.describe ReceptorController::Client::DirectiveBlocking do
         allow(ManageIQ::Messaging::Client).to receive(:open).and_return(kafka_client)
         allow(kafka_client).to receive(:subscribe_topic).and_yield(kafka_response)
         allow(kafka_client).to receive(:close)
-
       end
 
       it "waits for successful response and sets data" do
@@ -86,11 +85,11 @@ RSpec.describe ReceptorController::Client::DirectiveBlocking do
 
         allow(kafka_response).to receive(:payload).and_return(response_message.to_json)
 
-        expect(subject).to receive(:response_success)
+        expect(subject).to(receive(:response_success)
                              .with(response_message['in_response_to'],
                                    response_message['message_type'],
                                    response_message['payload'])
-                             .and_wrap_original do |m, *args|
+                             .and_wrap_original) do |m, *args|
           m.call(*args) # Doesn't release lock, only EOF response can
           subject.send(:response_waiting).signal
           subject.response_worker.stop
@@ -111,11 +110,11 @@ RSpec.describe ReceptorController::Client::DirectiveBlocking do
 
         allow(kafka_response).to receive(:payload).and_return(response_message.to_json)
 
-        expect(subject).to receive(:response_success)
+        expect(subject).to(receive(:response_success)
                              .with(response_message['in_response_to'],
                                    response_message['message_type'],
                                    response_message['payload'])
-                             .and_wrap_original do |m, *args|
+                             .and_wrap_original) do |m, *args|
           m.call(*args) # original call releases lock
           subject.response_worker.stop
         end
@@ -135,11 +134,11 @@ RSpec.describe ReceptorController::Client::DirectiveBlocking do
 
         allow(kafka_response).to receive(:payload).and_return(response_message.to_json)
 
-        expect(subject).to receive(:response_success)
+        expect(subject).to(receive(:response_success)
                              .with(response_message['in_response_to'],
                                    response_message['message_type'],
                                    response_message['payload'])
-                             .and_wrap_original do |m, *args|
+                             .and_wrap_original) do |m, *args|
           m.call(*args) # original call releases lock
           subject.response_worker.stop
         end
@@ -158,11 +157,11 @@ RSpec.describe ReceptorController::Client::DirectiveBlocking do
 
         allow(kafka_response).to receive(:payload).and_return(response_message.to_json)
 
-        expect(subject).to receive(:response_error)
+        expect(subject).to(receive(:response_error)
                              .with(response_message['in_response_to'],
                                    response_message['code'],
                                    response_message['payload'])
-                             .and_wrap_original do |m, *args|
+                             .and_wrap_original) do |m, *args|
           m.call(*args) # original calls releases lock
           subject.response_worker.stop
         end
@@ -180,9 +179,9 @@ RSpec.describe ReceptorController::Client::DirectiveBlocking do
 
         allow(kafka_client).to receive(:subscribe_topic).and_return(nil)
 
-        expect(subject).to receive(:response_timeout)
+        expect(subject).to(receive(:response_timeout)
                              .with(http_response['id'])
-                             .and_wrap_original do |m, *args|
+                             .and_wrap_original) do |m, *args|
           m.call(*args) # original call releases lock
           subject.response_worker.stop
         end

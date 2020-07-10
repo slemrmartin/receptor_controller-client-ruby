@@ -56,12 +56,12 @@ module ReceptorController
                   log_message_common: nil,
                   type: :non_blocking)
       klass = type == :non_blocking ? DirectiveNonBlocking : DirectiveBlocking
-      klass.new(:name    => directive,
-                :account => account_number,
-                :node_id => node_id,
-                :payload => payload,
+      klass.new(:name               => directive,
+                :account            => account_number,
+                :node_id            => node_id,
+                :payload            => payload,
                 :log_message_common => log_message_common,
-                :client  => self)
+                :client             => self)
     end
 
     def headers

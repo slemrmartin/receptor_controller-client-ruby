@@ -26,7 +26,6 @@ RSpec.describe ReceptorController::Client::DirectiveNonBlocking do
     client
   end
 
-
   let(:satellite_uid) { '1234567890' }
   let(:payload) { {'satellite_instance_id' => satellite_uid.to_s}.to_json }
   let(:directive) { 'receptor_satellite:health_check' }

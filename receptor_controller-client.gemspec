@@ -17,7 +17,7 @@ Gem::Specification.new do |s|
   s.summary     = "Client for communication with Platform Receptor Controller - Gem"
   s.description = "Client for communication with Platform Receptor Controller"
   s.license     = "Apache-2.0"
-  s.required_ruby_version = ">= 2.0"
+  s.required_ruby_version = ">= 2.5"
 
   s.add_runtime_dependency 'activesupport', '~> 5.2.4.3'
   s.add_runtime_dependency 'concurrent-ruby', '~> 1.1', '>= 1.1.6'
@@ -27,10 +27,12 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'manageiq-messaging', '~> 0.1.5'
 
   s.add_development_dependency 'bundler', '~> 2.0'
+  s.add_development_dependency 'rake', '>= 12.3.3'
   s.add_development_dependency 'rspec', '~> 3.6', '>= 3.6.0'
-  s.add_development_dependency 'webmock'
+  s.add_development_dependency 'rubocop', '~>0.69.0'
+  s.add_development_dependency 'rubocop-performance', '~>1.3'
   s.add_development_dependency 'simplecov', '~> 0.17.1'
-  s.add_development_dependency "rake", ">= 12.3.3"
+  s.add_development_dependency 'webmock'
 
   s.files         = `find *`.split("\n").uniq.sort.select { |f| !f.empty? }
   s.test_files    = `find spec/*`.split("\n")

@@ -16,7 +16,8 @@ module ReceptorController
   # Use "start" and "stop" methods to start/stop listening on Kafka
   class Client::ResponseWorker
     attr_reader :started
-    alias_method :started?, :started
+    alias started? started
+
 
     attr_accessor :received_messages
 
@@ -93,7 +94,7 @@ module ReceptorController
       response = JSON.parse(message.payload)
 
       if (message_id = response['in_response_to'])
-        logger.debug"------- Receptor response: Received: #{message_id}"
+        logger.debug("Receptor response: Received message_id: #{message_id}")
         if (callbacks = registered_messages[message_id]).present?
           # Reset last_checked_at to avoid timeout in multi-response messages
           reset_last_checked_at(callbacks)
@@ -161,7 +162,6 @@ module ReceptorController
         callbacks[:last_checked_at] = Time.now.utc
       end
     end
-
 
     # No persist_ref here, because all instances (pods) needs to receive kafka message
     def queue_opts
