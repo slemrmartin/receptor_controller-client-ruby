@@ -1,3 +1,7 @@
 AllCops:
   Exclude:
   - db/schema.rb
+
+# This rule makes code less readable
+Style/MultilineBlockChain:
+  Enabled: false
