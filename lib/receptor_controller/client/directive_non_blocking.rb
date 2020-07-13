@@ -51,14 +51,14 @@ module ReceptorController
 
         msg_id
       else
-        logger.error(receptor_log_msg("Directive #{name} failed: HTTP #{response.status}", account, node_id))
+        logger.error(receptor_log_msg("Directive #{name} failed (#{log_message_common}): HTTP #{response.status}", account, node_id))
         nil
       end
     rescue Faraday::Error => e
-      logger.error(receptor_log_msg("Directive #{name} failed. POST /job error", account, node_id, e))
+      logger.error(receptor_log_msg("Directive #{name} failed (#{log_message_common}). POST /job error", account, node_id, e))
       nil
     rescue => e
-      logger.error(receptor_log_msg("Directive #{name} failed", account, node_id, e))
+      logger.error(receptor_log_msg("Directive #{name} failed (#{log_message_common})", account, node_id, e))
       nil
     end
 
