@@ -1,4 +1,7 @@
+require 'base64'
 require "concurrent"
+require 'stringio'
+require 'zlib'
 
 module ReceptorController
   # ResponseWorker is listening on Kafka topic platform.receptor-controller.responses (@see Configuration.queue_topic)
@@ -17,7 +20,6 @@ module ReceptorController
   class Client::ResponseWorker
     attr_reader :started
     alias started? started
-
 
     attr_accessor :received_messages
 
@@ -106,7 +108,11 @@ module ReceptorController
             #
             message_type = response['message_type'] # "response" (with data) or "eof" (without data)
             registered_messages.delete(message_id) if message_type == 'eof'
-            callbacks[:receiver].send(callbacks[:response_callback], message_id, message_type, response['payload'])
+
+            payload = response['payload']
+            payload = unpack_payload(payload) if message_type == 'response' && payload.kind_of?(String)
+
+            callbacks[:receiver].send(callbacks[:response_callback], message_id, message_type, payload)
           else
             #
             # Response Error
@@ -154,6 +160,26 @@ module ReceptorController
       sleep(config.response_timeout_poll_time)
     rescue => err
       logger.error("Exception in maintenance worker: #{err}\n#{err.backtrace.join("\n")}")
+    end
+
+    # GZIP recognition
+    # https://tools.ietf.org/html/rfc1952#page-5
+    def gzipped?(data)
+      sign = data.to_s.bytes[0..1]
+
+      sign[0] == '0x1f'.hex && sign[1] == '0x8b'.hex
+    end
+
+    # Tries to decompress String response
+    # If not a gzip, it's a String error from receptor node
+    def unpack_payload(data)
+      decoded = Base64.decode64(data)
+      if gzipped?(decoded)
+        gz = Zlib::GzipReader.new(StringIO.new(decoded))
+        JSON.parse(gz.read)
+      else
+        data
+      end
     end
 
     # Reset last_checked_at to avoid timeout in multi-response messages
