@@ -65,7 +65,7 @@ module ReceptorController
     end
 
     def headers
-      default_headers.merge(identity_header || {})
+      default_headers.merge(auth_headers || {})
     end
 
     def receptor_log_msg(msg, account, node_id, exception = nil)
@@ -77,5 +77,14 @@ module ReceptorController
     private
 
     attr_writer :config
+
+    # Use x-rh-rbac-psk if present, x-rh-identity otherwise
+    def auth_headers
+      if config.pre_shared_key.present?
+        {'x-rh-rbac-psk' => config.pre_shared_key}
+      else
+        identity_header || {}
+      end
+    end
   end
 end

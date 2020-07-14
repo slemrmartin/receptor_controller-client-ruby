@@ -68,4 +68,20 @@ RSpec.describe ReceptorController::Client do
       end
     end
   end
+
+  describe "#headers" do
+    let(:pre_shared_key) { '123456789' }
+
+    it "uses identity_header if PSK is not provided" do
+      expect(subject.headers).to eq({"Content-Type" => "application/json"}.merge(identity))
+    end
+
+    it "uses pre-shared key if provided" do
+      subject.config.configure do |config|
+        config.pre_shared_key = pre_shared_key
+      end
+
+      expect(subject.headers).to eq({"Content-Type" => "application/json", "x-rh-rbac-psk" => pre_shared_key})
+    end
+  end
 end
