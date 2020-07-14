@@ -10,6 +10,9 @@ module ReceptorController
     # Path to sending directive requests
     attr_accessor :job_path
 
+    # x-rh-rbac-psk header for authentication with receptor controller (replaces x-rh-identity)
+    attr_accessor :pre_shared_key
+
     # Kafka message auto-ack (default false)
     attr_accessor :queue_auto_ack
     # Kafka host name
@@ -34,6 +37,7 @@ module ReceptorController
 
       @connection_status_path = '/connection/status'
       @job_path               = '/job'
+      @pre_shared_key         = nil
 
       @queue_auto_ack    = false
       @queue_host        = nil
