@@ -82,6 +82,8 @@ RSpec.describe ReceptorController::Client::ResponseWorker do
         let(:payload) { 'Wrong message' }
         before do
           allow(message).to receive(:payload).and_return(payload)
+          # disables gzip check
+          allow(subject).to receive(:unpack_payload).and_return(payload)
         end
 
         it "logs error" do
@@ -109,6 +111,21 @@ RSpec.describe ReceptorController::Client::ResponseWorker do
           %i[success error timeout].each do |callback|
             expect(receiver).not_to receive(callback)
           end
+
+          subject.send(:process_message, message)
+        end
+      end
+
+      context "receives gzip compressed response" do
+        let(:original_response_body) { {'status' => 200, 'body' => {'count' => 0, 'results' => []}} }
+        let(:response_body) { Base64.encode64(::Zlib.gzip(original_response_body.to_json)) }
+        let(:payload) { {'code' => 0, 'in_response_to' => message_id, 'message_type' => 'response', 'payload' => response_body} }
+
+        it "calls response callback" do
+          expect(subject).to receive(:gzipped?).and_call_original
+          expect(subject).to receive(:unpack_payload).and_call_original
+
+          expect(receiver).to receive(:success).with(message_id, payload['message_type'], original_response_body)
 
           subject.send(:process_message, message)
         end
