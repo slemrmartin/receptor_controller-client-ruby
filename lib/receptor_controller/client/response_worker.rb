@@ -101,7 +101,6 @@ module ReceptorController
           # Reset last_checked_at to avoid timeout in multi-response messages
           reset_last_checked_at(callbacks)
 
-          logger.debug("Receptor response: processing message #{message_id} (#{response})")
           if response['code'] == 0
             #
             # Response OK
@@ -112,12 +111,17 @@ module ReceptorController
             payload = response['payload']
             payload = unpack_payload(payload) if message_type == 'response' && payload.kind_of?(String)
 
+            logger.debug("Receptor response: OK | message #{message_id} (#{payload})")
+
             callbacks[:receiver].send(callbacks[:response_callback], message_id, message_type, payload)
           else
             #
             # Response Error
             #
             registered_messages.delete(message_id)
+
+            logger.debug("Receptor response: ERROR | message #{message_id} (#{response})")
+
             callbacks[:receiver].send(callbacks[:error_callback], message_id, response['code'], response['payload'])
           end
         else
