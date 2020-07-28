@@ -38,7 +38,7 @@ module ReceptorController
         :node_id => node_id
       }.to_json
 
-      response = Faraday.post(config.connection_status_url, body, headers)
+      response = Faraday.post(config.connection_status_url, body, headers(account_number))
       if response.success?
         JSON.parse(response.body)
       else
@@ -64,8 +64,8 @@ module ReceptorController
                 :client             => self)
     end
 
-    def headers
-      default_headers.merge(auth_headers || {})
+    def headers(account = nil)
+      default_headers.merge(auth_headers(account) || {})
     end
 
     def receptor_log_msg(msg, account, node_id, exception = nil)
@@ -78,10 +78,14 @@ module ReceptorController
 
     attr_writer :config
 
-    # Use x-rh-rbac-psk if present, x-rh-identity otherwise
-    def auth_headers
-      if config.pre_shared_key.present?
-        {'x-rh-rbac-psk' => config.pre_shared_key}
+    # Use x-rh-receptor-controller-psk if present, x-rh-identity otherwise
+    def auth_headers(account)
+      if config.pre_shared_key.present? && account.present?
+        {
+          'x-rh-receptor-controller-psk'       => config.pre_shared_key,
+          'x-rh-receptor-controller-client-id' => "topological-inventory",
+          'x-rh-receptor-controller-account'   => account
+        }
       else
         identity_header || {}
       end
