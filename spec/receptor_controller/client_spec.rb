@@ -81,7 +81,7 @@ RSpec.describe ReceptorController::Client do
         config.pre_shared_key = pre_shared_key
       end
 
-      expect(subject.headers).to eq({"Content-Type" => "application/json", "x-rh-rbac-psk" => pre_shared_key})
+      expect(subject.headers("000001")).to eq("Content-Type" => "application/json", "x-rh-receptor-controller-account" => "000001", "x-rh-receptor-controller-client-id" => "topological-inventory", "x-rh-receptor-controller-psk" => "123456789")
     end
   end
 end
