@@ -20,6 +20,7 @@ module ReceptorController
 
       msg_id = JSON.parse(response.body)['id']
 
+      logger.debug("Receptor response: registering message #{msg_id}".tap { |msg| msg << " req: #{body["href_slug"]}" if ENV["LOG_ALL_RECEPTOR_MESSAGES"] })
       # registers message id for kafka responses
       response_worker.register_message(msg_id, self)
       wait_for_response(msg_id)

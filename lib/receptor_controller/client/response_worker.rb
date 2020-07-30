@@ -65,7 +65,6 @@ module ReceptorController
     # @param timeout_callback [Symbol] name of receiver's method processing timeout [optional]
     # @param error_callback [Symbol] name of receiver's method processing errors [optional]
     def register_message(msg_id, receiver, response_callback: :response_success, timeout_callback: :response_timeout, error_callback: :response_error)
-      logger.debug("Receptor response: registering message #{msg_id}")
       registered_messages[msg_id] = {:receiver          => receiver,
                                      :response_callback => response_callback,
                                      :timeout_callback  => timeout_callback,
@@ -120,12 +119,13 @@ module ReceptorController
             #
             registered_messages.delete(message_id)
 
-            logger.debug("Receptor response: ERROR | message #{message_id} (#{response})")
+            logger.error("Receptor response: ERROR | message #{message_id} (#{response})")
 
             callbacks[:receiver].send(callbacks[:error_callback], message_id, response['code'], response['payload'])
           end
-        else
+        elsif ENV["LOG_ALL_RECEPTOR_MESSAGES"] == "true"
           # noop, it's not error if not registered, can be processed by another pod
+          logger.debug("Receptor response unhandled: #{message_id} (#{response['code']})")
         end
       else
         logger.error("Receptor response: Message id (in_response_to) not received! #{response}")
