@@ -123,7 +123,7 @@ module ReceptorController
 
             callbacks[:receiver].send(callbacks[:error_callback], message_id, response['code'], response['payload'])
           end
-        elsif ENV["LOG_ALL_RECEPTOR_MESSAGES"] == "true"
+        elsif ENV["LOG_ALL_RECEPTOR_MESSAGES"]&.to_i != 0
           # noop, it's not error if not registered, can be processed by another pod
           logger.debug("Receptor response unhandled: #{message_id} (#{response['code']})")
         end
