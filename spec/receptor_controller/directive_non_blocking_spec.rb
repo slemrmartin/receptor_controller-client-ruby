@@ -1,6 +1,6 @@
 require "receptor_controller/client/directive_non_blocking"
 
-RSpec.describe ReceptorController::Client::DirectiveNonBlocking do
+RSpec.xdescribe ReceptorController::Client::DirectiveNonBlocking do
   let(:external_tenant) { '0000001' }
   let(:organization_id) { '000001' }
   let(:identity) do
