@@ -18,6 +18,9 @@ module ReceptorController
   #
   # Use "start" and "stop" methods to start/stop listening on Kafka
   class Client::ResponseWorker
+    EOF = "eof".freeze
+    RESPONSE = "response".freeze
+
     attr_reader :started
     alias started? started
 
@@ -95,7 +98,7 @@ module ReceptorController
       response = JSON.parse(message.payload)
 
       if (message_id = response['in_response_to'])
-        logger.debug("Receptor response: Received message_id: #{message_id}")
+        logger.debug("Receptor response for message #{message_id}: serial: #{response["serial"]}, type: #{response['message_type']}, payload: #{response['payload'] || "n/a"}")
         if (callbacks = registered_messages[message_id]).present?
           # Reset last_checked_at to avoid timeout in multi-response messages
           reset_last_checked_at(callbacks)
@@ -105,14 +108,27 @@ module ReceptorController
             # Response OK
             #
             message_type = response['message_type'] # "response" (with data) or "eof" (without data)
-            registered_messages.delete(message_id) if message_type == 'eof'
-
             payload = response['payload']
-            payload = unpack_payload(payload) if message_type == 'response' && payload.kind_of?(String)
+            callbacks[:received_msgs] ? callbacks[:received_msgs] += 1 : callbacks[:received_msgs] = 1
 
-            logger.debug("Receptor response: OK | message #{message_id} (#{payload})")
+            case message_type
+            when EOF
+              # Store how many messages are needed to be received for this request
+              callbacks[:total_msgs] = response["serial"]
+            when RESPONSE
+              payload = unpack_payload(payload) if payload.kind_of?(String)
+              callbacks[:msg_size] ? callbacks[:msg_size] += payload.size : callbacks[:msg_size] = payload.size
+              callbacks[:receiver].send(callbacks[:response_callback], message_id, message_type, payload)
+            end
 
-            callbacks[:receiver].send(callbacks[:response_callback], message_id, message_type, payload)
+            # We received all the messages, complete the message.
+            if callbacks[:received_msgs] == callbacks[:total_msgs]
+              registered_messages.delete(message_id)
+              callbacks[:receiver].send(callbacks[:response_callback], message_id, EOF, payload)
+              logger.debug("Receptor Message #{message_id} complete, total bytes: #{callbacks[:msg_size]}")
+            end
+
+            logger.debug("Receptor response: OK | message: #{message_id}, serial: #{response["serial"]}, type: #{message_type}, payload: #{payload || "n/a"}")
           else
             #
             # Response Error

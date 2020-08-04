@@ -1,6 +1,6 @@
 require "receptor_controller/client/directive_blocking"
 
-RSpec.describe ReceptorController::Client::DirectiveBlocking do
+RSpec.xdescribe ReceptorController::Client::DirectiveBlocking do
   # TODO: definitions below contain the same like non-blocking spec
   let(:external_tenant) { '0000001' }
   let(:organization_id) { '000001' }
