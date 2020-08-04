@@ -39,7 +39,7 @@ module ReceptorController
       @job_path               = '/job'
       @pre_shared_key         = nil
 
-      @queue_auto_ack    = false
+      @queue_auto_ack    = true
       @queue_host        = nil
       @queue_max_bytes   = nil
       @queue_persist_ref = nil
