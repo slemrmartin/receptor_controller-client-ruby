@@ -1,6 +1,6 @@
 require "receptor_controller/client/directive_non_blocking"
 
-RSpec.xdescribe ReceptorController::Client::DirectiveNonBlocking do
+RSpec.describe ReceptorController::Client::DirectiveNonBlocking do
   let(:external_tenant) { '0000001' }
   let(:organization_id) { '000001' }
   let(:identity) do
@@ -101,13 +101,13 @@ RSpec.xdescribe ReceptorController::Client::DirectiveNonBlocking do
       # Kafka response - 'response' type
       expect(subject).to receive(:response_success).twice.and_call_original
       message_type, payload = 'response', 'Testing payload'
-      response_payload = {'code' => 0, 'in_response_to' => response_id, 'message_type' => message_type, 'payload' => payload}
+      response_payload = {'code' => 0, 'in_response_to' => response_id, 'message_type' => message_type, 'payload' => payload, :serial => 1}
       allow(response).to receive(:payload).and_return(response_payload.to_json)
       subject.response_worker.send(:process_message, response)
 
       # Kafka response - 'eof' type
       message_type = 'eof'
-      response_payload = {'code' => 0, 'in_response_to' => response_id, 'message_type' => message_type, 'payload' => nil}
+      response_payload = {'code' => 0, 'in_response_to' => response_id, 'message_type' => message_type, 'payload' => nil, :serial => 2}
       allow(response).to receive(:payload).and_return(response_payload.to_json)
       subject.response_worker.send(:process_message, response)
 
@@ -142,7 +142,7 @@ RSpec.xdescribe ReceptorController::Client::DirectiveNonBlocking do
 
       # Kafka response - 'response' type - success
       message_type, payload = 'response', 'Testing payload'
-      response_payload = {'code' => 0, 'in_response_to' => response_id, 'message_type' => message_type, 'payload' => payload}
+      response_payload = {'code' => 0, 'in_response_to' => response_id, 'message_type' => message_type, 'payload' => payload, :serial => 1}
       allow(response).to receive(:payload).and_return(response_payload.to_json)
       success_calls.times do
         subject.response_worker.send(:process_message, response)
@@ -150,7 +150,7 @@ RSpec.xdescribe ReceptorController::Client::DirectiveNonBlocking do
 
       # Kafka response - 'eof' type
       message_type = 'eof'
-      response_payload = {'code' => 0, 'in_response_to' => response_id, 'message_type' => message_type, 'payload' => nil}
+      response_payload = {'code' => 0, 'in_response_to' => response_id, 'message_type' => message_type, 'payload' => nil, :serial => 4}
       allow(response).to receive(:payload).and_return(response_payload.to_json)
       subject.response_worker.send(:process_message, response)
 

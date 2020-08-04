@@ -1,6 +1,6 @@
 require "receptor_controller/client/directive_blocking"
 
-RSpec.xdescribe ReceptorController::Client::DirectiveBlocking do
+RSpec.describe ReceptorController::Client::DirectiveBlocking do
   # TODO: definitions below contain the same like non-blocking spec
   let(:external_tenant) { '0000001' }
   let(:organization_id) { '000001' }
@@ -106,7 +106,8 @@ RSpec.xdescribe ReceptorController::Client::DirectiveBlocking do
         response_message = {'code'           => 0,
                             'in_response_to' => http_response['id'],
                             'message_type'   => subject.class::MESSAGE_TYPE_EOF,
-                            'payload'        => 'Unimportant'}
+                            'payload'        => 'Unimportant',
+                            'serial'         => 1}
 
         allow(kafka_response).to receive(:payload).and_return(response_message.to_json)
 
