@@ -32,6 +32,10 @@ RSpec.describe ReceptorController::Client::DirectiveBlocking do
 
   subject { described_class.new(:name => directive, :account => external_tenant, :node_id => receptor_node, :payload => payload, :client => receptor_client) }
 
+  before do
+    allow(subject.response_worker).to receive_messages(:init_notifications => nil, :wait_for_notifications => nil)
+  end
+
   describe "#call" do
     it "makes POST /job request to receptor and registers received message ID" do
       allow(subject).to receive(:wait_for_response)
