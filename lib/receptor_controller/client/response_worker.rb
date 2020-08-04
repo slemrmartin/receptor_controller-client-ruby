@@ -119,6 +119,9 @@ module ReceptorController
               payload = unpack_payload(payload) if payload.kind_of?(String)
               callbacks[:msg_size] ? callbacks[:msg_size] += payload.size : callbacks[:msg_size] = payload.size
               callbacks[:receiver].send(callbacks[:response_callback], message_id, message_type, payload)
+            else
+              # Send the callback to release the thread.
+              callbacks[:receiver].send(callbacks[:response_callback], message_id, message_type, payload)
             end
 
             # We received all the messages, complete the message.
