@@ -121,6 +121,7 @@ module ReceptorController
               callbacks[:receiver].send(callbacks[:response_callback], message_id, message_type, payload)
             else
               # Send the callback to release the thread.
+              logger.warn("Receptor response: Unexpected type | message #{message_id}, type: #{message_type}")
               callbacks[:receiver].send(callbacks[:response_callback], message_id, message_type, payload)
             end
 
