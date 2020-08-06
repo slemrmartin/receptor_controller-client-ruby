@@ -48,6 +48,7 @@ module ReceptorController
 
         # registers message id for kafka responses
         response_worker.register_message(msg_id, self)
+        logger.debug("Receptor response: registering message #{msg_id}, href_slug: #{body[:payload]["href_slug"]}")
 
         msg_id
       else
