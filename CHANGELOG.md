@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.5] - 2020-08-11
+### Added
+- Unique Persist-ref for every response worker #18
+
 ## [0.0.4] - 2020-08-04
 ### Added
 - Default Kafka ACK to true
@@ -20,7 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added extra logging for messages
 
-[Unreleased]: https://github.com/RedHatInsights/receptor_controller-client-ruby/compare/v0.0.4...HEAD
+[Unreleased]: https://github.com/RedHatInsights/receptor_controller-client-ruby/compare/v0.0.5...HEAD
+[0.0.5]: https://github.com/RedHatInsights/receptor_controller-client-ruby/releases/tag/v0.0.5
 [0.0.4]: https://github.com/RedHatInsights/receptor_controller-client-ruby/releases/tag/v0.0.4
 [0.0.3]: https://github.com/RedHatInsights/receptor_controller-client-ruby/releases/tag/v0.0.3
 [0.0.2]: https://github.com/RedHatInsights/receptor_controller-client-ruby/releases/tag/v0.0.2
