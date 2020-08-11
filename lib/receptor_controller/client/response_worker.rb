@@ -89,7 +89,7 @@ module ReceptorController
         process_message(message)
       end
     rescue => err
-      logger.error("Exception in kafka listener: #{err}\n#{err.backtrace.join("\n")}")
+      logger.error(response_log("Exception in kafka listener: #{err}\n#{err.backtrace.join("\n")}"))
     ensure
       client&.close
     end
@@ -98,7 +98,7 @@ module ReceptorController
       response = JSON.parse(message.payload)
 
       if (message_id = response['in_response_to'])
-        logger.debug("Receptor response for message #{message_id}: serial: #{response["serial"]}, type: #{response['message_type']}, payload: #{response['payload'] || "n/a"}")
+        logger.debug(response_log("Received message #{message_id}: serial: #{response["serial"]}, type: #{response['message_type']}, payload: #{response['payload'] || "n/a"}"))
         if (callbacks = registered_messages[message_id]).present?
           # Reset last_checked_at to avoid timeout in multi-response messages
           reset_last_checked_at(callbacks)
@@ -121,7 +121,7 @@ module ReceptorController
               callbacks[:receiver].send(callbacks[:response_callback], message_id, message_type, payload)
             else
               # Send the callback to release the thread.
-              logger.warn("Receptor response: Unexpected type | message #{message_id}, type: #{message_type}")
+              logger.warn(response_log("Unexpected type | message #{message_id}, type: #{message_type}"))
               callbacks[:receiver].send(callbacks[:response_callback], message_id, message_type, payload)
             end
 
@@ -129,31 +129,31 @@ module ReceptorController
             if callbacks[:received_msgs] == callbacks[:total_msgs]
               registered_messages.delete(message_id)
               callbacks[:receiver].send(callbacks[:response_callback], message_id, EOF, payload)
-              logger.debug("Receptor Message #{message_id} complete, total bytes: #{callbacks[:msg_size]}")
+              logger.debug(response_log("Message #{message_id} complete, total bytes: #{callbacks[:msg_size]}"))
             end
 
-            logger.debug("Receptor response: OK | message: #{message_id}, serial: #{response["serial"]}, type: #{message_type}, payload: #{payload || "n/a"}")
+            logger.debug(response_log("OK | message: #{message_id}, serial: #{response["serial"]}, type: #{message_type}, payload: #{payload || "n/a"}"))
           else
             #
             # Response Error
             #
             registered_messages.delete(message_id)
 
-            logger.error("Receptor response: ERROR | message #{message_id} (#{response})")
+            logger.error(response_log("ERROR | message #{message_id} (#{response})"))
 
             callbacks[:receiver].send(callbacks[:error_callback], message_id, response['code'], response['payload'])
           end
         elsif ENV["LOG_ALL_RECEPTOR_MESSAGES"]&.to_i != 0
           # noop, it's not error if not registered, can be processed by another pod
-          logger.debug("Receptor response unhandled: #{message_id} (#{response['code']})")
+          logger.debug(response_log("NOT REGISTERED | #{message_id} (#{response['code']})"))
         end
       else
-        logger.error("Receptor response: Message id (in_response_to) not received! #{response}")
+        logger.error(response_log("MISSING | Message id (in_response_to) not received! #{response}"))
       end
     rescue JSON::ParserError => e
-      logger.error("Receptor response: Failed to parse Kafka response (#{e.message})\n#{message.payload}")
+      logger.error(response_log("Failed to parse Kafka response (#{e.message})\n#{message.payload}"))
     rescue => e
-      logger.error("Receptor response: #{e}\n#{e.backtrace.join("\n")}")
+      logger.error(response_log("#{e}\n#{e.backtrace.join("\n")}"))
     ensure
       message.ack unless config.queue_auto_ack
     end
@@ -214,12 +214,15 @@ module ReceptorController
     end
 
     # No persist_ref here, because all instances (pods) needs to receive kafka message
+    # TODO: temporary changed to unique persist_ref
     def queue_opts
-      opts               = {:service  => config.queue_topic,
-                            :auto_ack => config.queue_auto_ack}
-      opts[:max_bytes]   = config.queue_max_bytes if config.queue_max_bytes
-      opts[:persist_ref] = config.queue_persist_ref if config.queue_persist_ref
-      opts
+      return @queue_opts if @queue_opts
+
+      @queue_opts               = {:service  => config.queue_topic,
+                                   :auto_ack => config.queue_auto_ack}
+      @queue_opts[:max_bytes]   = config.queue_max_bytes if config.queue_max_bytes
+      @queue_opts[:persist_ref] = config.queue_persist_ref if config.queue_persist_ref
+      @queue_opts
     end
 
     def default_messaging_opts
@@ -229,6 +232,10 @@ module ReceptorController
         :protocol   => :Kafka,
         :client_ref => "receptor_client-responses-#{Time.now.to_i}", # A reference string to identify the client
       }
+    end
+
+    def response_log(message)
+      "Receptor Response [#{queue_opts[:persist_ref]}]: #{message}"
     end
   end
 end
