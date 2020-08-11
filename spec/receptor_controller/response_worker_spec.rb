@@ -9,7 +9,13 @@ RSpec.describe ReceptorController::Client::ResponseWorker do
 
   before do
     allow(logger).to receive_messages(%i[debug info warn error fatal])
-    allow(config).to receive_messages(:queue_auto_ack => false, :response_timeout => 0, :response_timeout_poll_time => 0)
+    allow(config).to receive_messages(:queue_auto_ack => false,
+                                      :queue_max_bytes => nil,
+                                      :queue_persist_ref => 'consumer-group-1',
+                                      :queue_topic => 'receptor.kafka.topic',
+                                      :response_timeout => 0,
+                                      :response_timeout_poll_time => 0,
+                                      )
   end
 
   describe "#register_message" do
@@ -87,7 +93,7 @@ RSpec.describe ReceptorController::Client::ResponseWorker do
         end
 
         it "logs error" do
-          expect(logger).to receive(:error).with(/Receptor response: Failed to parse Kafka response/)
+          expect(logger).to receive(:error).with(/Failed to parse Kafka response/)
 
           subject.send(:process_message, message)
         end
@@ -97,7 +103,7 @@ RSpec.describe ReceptorController::Client::ResponseWorker do
         let(:payload) { {'code' => 0, 'message_type' => 'response', 'payload' => response_body} }
 
         it "logs error" do
-          expect(logger).to receive(:error).with(/Receptor response: Message id \(in_response_to\) not received!/)
+          expect(logger).to receive(:error).with(/Message id \(in_response_to\) not received!/)
 
           subject.send(:process_message, message)
         end

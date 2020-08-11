@@ -42,7 +42,7 @@ module ReceptorController
       @queue_auto_ack    = true
       @queue_host        = nil
       @queue_max_bytes   = nil
-      @queue_persist_ref = nil
+      @queue_persist_ref = "receptor-client.#{SecureRandom.uuid}"
       @queue_port        = nil
       @queue_topic       = 'platform.receptor-controller.responses'
 
