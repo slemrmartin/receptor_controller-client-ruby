@@ -48,7 +48,7 @@ module ReceptorController
 
         # registers message id for kafka responses
         response_worker.register_message(msg_id, self)
-        logger.debug("Receptor response [#{ReceptorController::Client::Configuration.default.queue_persist_ref}]: registering message #{msg_id}, href_slug: #{body[:payload]["href_slug"]}")
+        logger.debug("Receptor response [#{ReceptorController::Client::Configuration.default.queue_persist_ref}]: registering message #{msg_id}, href_slug: #{log_message_common}")
 
         msg_id
       else
