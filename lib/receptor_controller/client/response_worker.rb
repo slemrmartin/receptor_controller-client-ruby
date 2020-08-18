@@ -221,7 +221,7 @@ module ReceptorController
       @queue_opts               = {:service  => config.queue_topic,
                                    :auto_ack => config.queue_auto_ack}
       @queue_opts[:max_bytes]   = config.queue_max_bytes if config.queue_max_bytes
-      @queue_opts[:persist_ref] = config.queue_persist_ref if config.queue_persist_ref
+      @queue_opts[:persist_ref] = ENV['HOSTNAME']
       @queue_opts
     end
 
