@@ -21,6 +21,7 @@ module ReceptorController
   class Client::ResponseWorker
     EOF = "eof".freeze
     RESPONSE = "response".freeze
+    INITIALIZATION_TIMEOUT = 20
 
     attr_reader :started
     alias started? started
@@ -73,15 +74,23 @@ module ReceptorController
     # Listening for the consumer call to the Fetch API
     # Then releasing original starting thread
     def init_notifications(init_lock, init_wait)
+      logger.info("Initializing Receptor kafka client...")
+      start_time = Time.now.utc
       ActiveSupport::Notifications.subscribe('request.connection.kafka') do |*args|
         event = ActiveSupport::Notifications::Event.new(*args)
         if default_messaging_opts[:client_ref] == event.payload[:client_id]
           if event.payload[:api] == :fetch
-            logger.debug "Receptor Response: Kafka event #{event.name} from Fetch API received...#{event.payload.inspect}"
+            logger.info "Receptor Kafka client successfully initialized "
             # initialized, unsubscribe notifications
             ActiveSupport::Notifications.unsubscribe('request.connection.kafka')
             init_lock.synchronize { init_wait.signal }
           end
+        end
+
+        if start_time <= INITIALIZATION_TIMEOUT.seconds.ago.utc
+          ActiveSupport::Notifications.unsubscribe('request.connection.kafka')
+          logger.error("Receptor Kafka client initialization timeout...")
+          init_lock.synchronize { init_wait.signal }
         end
       end
     end
