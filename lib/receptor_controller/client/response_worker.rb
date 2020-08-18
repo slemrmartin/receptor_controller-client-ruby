@@ -1,3 +1,4 @@
+require 'active_support/notifications'
 require 'base64'
 require "concurrent"
 require 'stringio'
@@ -20,6 +21,7 @@ module ReceptorController
   class Client::ResponseWorker
     EOF = "eof".freeze
     RESPONSE = "response".freeze
+    INITIALIZATION_TIMEOUT = 20
 
     attr_reader :started
     alias started? started
@@ -39,13 +41,23 @@ module ReceptorController
 
     # Start listening on Kafka
     def start
+      init_lock, init_wait = Mutex.new, ConditionVariable.new
+
       lock.synchronize do
         return if started.value
+
+        default_messaging_opts # Thread-safe init
+        init_notifications(init_lock, init_wait)
 
         started.value         = true
         workers[:maintenance] = Thread.new { check_timeouts while started.value }
         workers[:listener]    = Thread.new { listen while started.value }
       end
+
+      # Wait for kafka initialization
+      wait_for_notifications(init_lock, init_wait)
+
+      logger.info("Receptor Response worker started...")
     end
 
     # Stop listener
@@ -56,6 +68,36 @@ module ReceptorController
         started.value = false
         workers[:listener]&.terminate
         workers[:maintenance]&.join
+      end
+    end
+
+    # Listening for the consumer call to the Fetch API
+    # Then releasing original starting thread
+    def init_notifications(init_lock, init_wait)
+      logger.info("Initializing Receptor kafka client...")
+      start_time = Time.now.utc
+      ActiveSupport::Notifications.subscribe('request.connection.kafka') do |*args|
+        event = ActiveSupport::Notifications::Event.new(*args)
+        if default_messaging_opts[:client_ref] == event.payload[:client_id]
+          if event.payload[:api] == :fetch
+            logger.info "Receptor Kafka client successfully initialized "
+            # initialized, unsubscribe notifications
+            ActiveSupport::Notifications.unsubscribe('request.connection.kafka')
+            init_lock.synchronize { init_wait.signal }
+          end
+        end
+
+        if start_time <= INITIALIZATION_TIMEOUT.seconds.ago.utc
+          ActiveSupport::Notifications.unsubscribe('request.connection.kafka')
+          logger.error("Receptor Kafka client initialization timeout...")
+          init_lock.synchronize { init_wait.signal }
+        end
+      end
+    end
+
+    def wait_for_notifications(init_lock, init_wait)
+      init_lock.synchronize do
+        init_wait.wait(init_lock)
       end
     end
 
@@ -84,7 +126,6 @@ module ReceptorController
       # Open a connection to the messaging service
       client = ManageIQ::Messaging::Client.open(default_messaging_opts)
 
-      logger.info("Receptor Response worker started...")
       client.subscribe_topic(queue_opts) do |message|
         process_message(message)
       end
@@ -226,7 +267,9 @@ module ReceptorController
     end
 
     def default_messaging_opts
-      {
+      return @default_messaging_opts if @default_messaging_opts
+
+      @default_messaging_opts = {
         :host       => config.queue_host,
         :port       => config.queue_port,
         :protocol   => :Kafka,
