@@ -47,15 +47,11 @@ module ReceptorController
         return if started.value
 
         default_messaging_opts # Thread-safe init
-        init_notifications(init_lock, init_wait)
 
         started.value         = true
         workers[:maintenance] = Thread.new { check_timeouts while started.value }
         workers[:listener]    = Thread.new { listen while started.value }
       end
-
-      # Wait for kafka initialization
-      wait_for_notifications(init_lock, init_wait)
 
       logger.info("Receptor Response worker started...")
     end
@@ -68,36 +64,6 @@ module ReceptorController
         started.value = false
         workers[:listener]&.terminate
         workers[:maintenance]&.join
-      end
-    end
-
-    # Listening for the consumer call to the Fetch API
-    # Then releasing original starting thread
-    def init_notifications(init_lock, init_wait)
-      logger.info("Initializing Receptor kafka client...")
-      start_time = Time.now.utc
-      ActiveSupport::Notifications.subscribe('request.connection.kafka') do |*args|
-        event = ActiveSupport::Notifications::Event.new(*args)
-        if default_messaging_opts[:client_ref] == event.payload[:client_id]
-          if event.payload[:api] == :fetch
-            logger.info "Receptor Kafka client successfully initialized "
-            # initialized, unsubscribe notifications
-            ActiveSupport::Notifications.unsubscribe('request.connection.kafka')
-            init_lock.synchronize { init_wait.signal }
-          end
-        end
-
-        if start_time <= INITIALIZATION_TIMEOUT.seconds.ago.utc
-          ActiveSupport::Notifications.unsubscribe('request.connection.kafka')
-          logger.error("Receptor Kafka client initialization timeout...")
-          init_lock.synchronize { init_wait.signal }
-        end
-      end
-    end
-
-    def wait_for_notifications(init_lock, init_wait)
-      init_lock.synchronize do
-        init_wait.wait(init_lock)
       end
     end
 
