@@ -24,7 +24,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'faraday', '~> 1.0'
   s.add_runtime_dependency 'json', '~> 2.3', '>= 2.3.0'
   s.add_runtime_dependency 'manageiq-loggers', '~> 0.5.0'
-  s.add_runtime_dependency 'manageiq-messaging', '~> 0.1.5'
+  s.add_runtime_dependency 'manageiq-messaging', '~> 1.0.0'
 
   s.add_development_dependency 'bundler', '~> 2.0'
   s.add_development_dependency 'rake', '>= 12.3.3'
