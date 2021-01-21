@@ -42,7 +42,7 @@ module ReceptorController
 
     # Entrypoint for request
     def call(body = default_body)
-      response = Faraday.post(config.job_url, body.to_json, client.headers)
+      response = Faraday.post(config.job_url, body.to_json, client.headers(account))
       if response.success?
         msg_id = JSON.parse(response.body)['id']
 
