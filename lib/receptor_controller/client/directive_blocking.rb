@@ -74,7 +74,7 @@ module ReceptorController
     attr_accessor :response_data, :response_exception, :response_lock, :response_waiting
 
     def connection
-      @connection ||= Faraday.new(config.controller_url, :headers => client.headers) do |c|
+      @connection ||= Faraday.new(config.controller_url, :headers => client.headers(account)) do |c|
         c.use(Faraday::Response::RaiseError)
         c.adapter(Faraday.default_adapter)
       end

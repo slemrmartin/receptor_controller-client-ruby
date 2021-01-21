@@ -6,11 +6,21 @@ RSpec.describe ReceptorController::Client::DirectiveNonBlocking do
   let(:identity) do
     {"x-rh-identity" => Base64.strict_encode64({"identity" => {"account_number" => external_tenant, "user" => {"is_org_admin" => true}, "internal" => {"org_id" => organization_id}}}.to_json)}
   end
-  let(:headers) do
+  let(:pre_shared_key) { '1234' }
+  let(:pre_shared_key_headers) do
+    {
+      'x-rh-receptor-controller-psk'       => pre_shared_key,
+      'x-rh-receptor-controller-client-id' => "topological-inventory",
+      'x-rh-receptor-controller-account'   => external_tenant
+    }
+  end
+  let(:headers_common) do
     {"Content-Type"    => "application/json",
      "Accept"          => "*/*",
-     "Accept-Encoding" => 'gzip;q=1.0,deflate;q=0.6,identity;q=0.3'}.merge(identity)
+     "Accept-Encoding" => 'gzip;q=1.0,deflate;q=0.6,identity;q=0.3'}
   end
+  let(:headers) { headers_common.merge(identity) }
+  let(:headers_psk) { headers_common.merge(pre_shared_key_headers) }
   let(:receptor_scheme) { 'http' }
   let(:receptor_host) { 'localhost:9090' }
   let(:receptor_node) { 'testing-receptor' }
@@ -21,7 +31,7 @@ RSpec.describe ReceptorController::Client::DirectiveNonBlocking do
     end
   end
   let(:receptor_client) do
-    client = ReceptorController::Client.new
+    client = ReceptorController::Client.new(:config => receptor_config)
     client.identity_header = identity
     client
   end
@@ -63,6 +73,19 @@ RSpec.describe ReceptorController::Client::DirectiveNonBlocking do
       expect(subject.response_worker).not_to receive(:register_message)
 
       expect(subject.call).to be_nil
+    end
+
+    it "makes a POST request with PSK headers if provided" do
+      receptor_config.pre_shared_key = pre_shared_key
+
+      response = {"id" => '1234'}
+
+      stub_request(:post, "#{receptor_scheme}://#{receptor_host}/job")
+        .with(:body    => subject.default_body.to_json,
+              :headers => headers_psk)
+        .to_return(:status => 200, :body => response.to_json, :headers => {})
+
+      expect(subject.call).to eq(response['id'])
     end
   end
 
